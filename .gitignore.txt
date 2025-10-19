@@ -1,0 +1,61 @@
+# -----------------------------
+# Build and runtime artifacts
+# -----------------------------
+bin/
+obj/
+out/
+Debug/
+Release/
+TestResults/
+*.dll
+*.exe
+*.pdb
+*.db
+*.log
+
+# -----------------------------
+# User-specific and environment files
+# -----------------------------
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.swp
+*.bak
+*.tmp
+
+# -----------------------------
+# Package and dependency folders
+# -----------------------------
+node_modules/
+packages/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# -----------------------------
+# Generated code and cache
+# -----------------------------
+*.generated.cs
+*.g.cs
+*.AssemblyAttributes.cs
+project.lock.json
+project.fragment.lock.json
+
+# -----------------------------
+# System files
+# -----------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# -----------------------------
+# Docker and environment configs (optional)
+# -----------------------------
+.env
+docker-compose.override.yml
