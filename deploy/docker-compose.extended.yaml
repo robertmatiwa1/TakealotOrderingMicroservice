@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: ordering
+    ports: ["5432:5432"]
+
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda start --kafka-addr 0.0.0.0:9092 --advertise-kafka-addr 127.0.0.1:9092
+    ports: ["9092:9092"]
+
+  ordering-api:
+    build:
+      context: ../
+      dockerfile: src/Ordering.Api/Dockerfile
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres"
+      Kafka__BootstrapServers: "redpanda:9092"
+      Kafka__Topic: "ordering-events"
+      Kafka__PaymentTopic: "payment-events"
+    ports: ["5080:8080"]
+    depends_on: [postgres, redpanda]
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    ports: ["3000:3000"]

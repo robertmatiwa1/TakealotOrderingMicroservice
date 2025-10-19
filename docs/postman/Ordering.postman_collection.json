@@ -1,0 +1,61 @@
+{
+  "info": {
+    "_postman_id": "77790314-142e-4b5b-9cf3-287312735501",
+    "name": "Ordering API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5080/api/orders",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5080",
+          "path": [
+            "api",
+            "orders"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"customerId\": \"11111111-1111-1111-1111-111111111111\", \"lines\": [{\"sku\": \"SKU-123\", \"quantity\": 2, \"unitPrice\": 199.99}]}"
+        }
+      }
+    },
+    {
+      "name": "Get Order",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:5080/api/orders/{{orderId}}"
+      }
+    },
+    {
+      "name": "Cancel Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "http://localhost:5080/api/orders/{{orderId}}/cancel",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"reason\": \"User\"}"
+        }
+      }
+    }
+  ]
+}

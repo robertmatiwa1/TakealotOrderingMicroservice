@@ -1,0 +1,11 @@
+## 🔧 Upgrade Additions (Enterprise Polish)
+- DTO validation with **FluentValidation**
+- Global **ProblemDetails** middleware for consistent error responses
+- **CQRS split**: `IOrderCommandService` & `IOrderQueryService`
+- **Kafka consumer** for `PaymentSucceeded`/`PaymentFailed` (saga progression)
+- **Outbox retention job** (scheduled cleanup)
+- Extended **docker-compose** with API + Prometheus + Grafana
+- **GitHub Actions** CI pipeline (build + test)
+- `.env.example` with required variables
+- **Prometheus counters** for key operations
+- **Postman collection** under `/docs/postman/Ordering.postman_collection.json`
