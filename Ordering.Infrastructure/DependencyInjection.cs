@@ -15,7 +15,7 @@ namespace Ordering.Infrastructure
                 opts.UseNpgsql(config.GetConnectionString("Default")));
 
             services.AddScoped<IOutboxWriter, OutboxWriter>();
-            services.AddHostedService<OutboxDispatcher>();
+            //services.AddHostedService<OutboxDispatcher>();
 
             services.AddSingleton<IEventBus, KafkaEventBus>();
 

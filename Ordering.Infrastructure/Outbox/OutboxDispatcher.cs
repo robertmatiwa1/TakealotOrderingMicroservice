@@ -5,18 +5,20 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Ordering.Infrastructure.Messaging;
 using Ordering.Infrastructure.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Ordering.Infrastructure.Outbox
 {
     public class OutboxDispatcher : BackgroundService
     {
-        private readonly IServiceProvider _sp;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<OutboxDispatcher> _logger;
         private readonly string _topic;
 
-        public OutboxDispatcher(IServiceProvider sp, ILogger<OutboxDispatcher> logger, IConfiguration config)
+        public OutboxDispatcher(IServiceScopeFactory scopeFactory, ILogger<OutboxDispatcher> logger, IConfiguration config)
         {
-            _sp = sp; _logger = logger;
+            _scopeFactory = scopeFactory;
+            _logger = logger;
             _topic = config.GetSection("Kafka")["Topic"] ?? "ordering-events";
         }
 
@@ -26,7 +28,7 @@ namespace Ordering.Infrastructure.Outbox
             {
                 try
                 {
-                    using var scope = _sp.CreateScope();
+                    using var scope = _scopeFactory.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     var bus = scope.ServiceProvider.GetRequiredService<IEventBus>();
 
