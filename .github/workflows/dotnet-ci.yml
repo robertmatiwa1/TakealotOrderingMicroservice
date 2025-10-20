@@ -1,0 +1,45 @@
+name: .NET 8 CI - Takealot Ordering Microservice
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build & Test (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup .NET 8 SDK
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # 3️⃣ Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore TakealotOrdering.sln
+
+      # 4️⃣ Build solution
+      - name: Build solution
+        run: dotnet build TakealotOrdering.sln --configuration Release --no-restore
+
+      # 5️⃣ Run tests (skipped if no tests exist)
+      - name: Run tests
+        run: |
+          if [ -d "Ordering.Tests" ]; then
+            dotnet test Ordering.Tests/Ordering.Tests.csproj --no-build --verbosity normal
+          else
+            echo "No test project found. Skipping tests."
+          fi
+
+      # 6️⃣ Publish build artifacts
+      - name: Publish artifacts
+        if: success()
+        run: dotnet publish Ordering.Api/Ordering.Api.csproj -c Release -o ./publish
