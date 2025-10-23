@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "0eWKP21TMqwBiyRAvVSoqGrKiBugahtMnzDvvsgX6wG/bjmEc0rUBISBDRLOHYt5TnvEqa11SiAVW4NdUagHUw==",
+  "dgSpecHash": "s0x41zJMVU9POepKX3dTrN0EyAcQ8P8AtFbhGQ6Pum2nluAcSBsmlbnDJkte3CjCA8ffQFgO5yu3Q2QGsDuSjA==",
   "success": true,
   "projectFilePath": "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Api\\Ordering.Api.csproj",
   "expectedPackageFiles": [
@@ -25,7 +25,7 @@
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.configuration\\8.0.0\\microsoft.extensions.configuration.8.0.0.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\8.0.0\\microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.configuration.binder\\8.0.0\\microsoft.extensions.configuration.binder.8.0.0.nupkg.sha512",
-    "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\9.0.10\\microsoft.extensions.dependencyinjection.9.0.10.nupkg.sha512",
+    "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\8.0.0\\microsoft.extensions.dependencyinjection.8.0.0.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.10\\microsoft.extensions.dependencyinjection.abstractions.9.0.10.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.dependencymodel\\8.0.1\\microsoft.extensions.dependencymodel.8.0.1.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.extensions.diagnostics.abstractions\\8.0.0\\microsoft.extensions.diagnostics.abstractions.8.0.0.nupkg.sha512",

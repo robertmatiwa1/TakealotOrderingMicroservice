@@ -12,11 +12,9 @@ namespace Ordering.Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
             services.AddDbContext<AppDbContext>(opts =>
-                opts.UseNpgsql(config.GetConnectionString("Default")));
+                opts.UseNpgsql(config.GetConnectionString("OrderingDb")));
 
             services.AddScoped<IOutboxWriter, OutboxWriter>();
-            //services.AddHostedService<OutboxDispatcher>();
-
             services.AddSingleton<IEventBus, KafkaEventBus>();
 
             return services;
