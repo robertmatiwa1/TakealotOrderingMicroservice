@@ -2,57 +2,54 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using Ordering.Infrastructure.Messaging;
 using Ordering.Infrastructure.Persistence;
-using Microsoft.Extensions.DependencyInjection;
+using Ordering.Infrastructure.Messaging;
 
-namespace Ordering.Infrastructure.Outbox
+namespace Ordering.Infrastructure.Outbox;
+
+public class OutboxDispatcher : BackgroundService
 {
-    public class OutboxDispatcher : BackgroundService
+    private readonly ILogger<OutboxDispatcher> _logger;
+    private readonly OrderingDbContext _db;
+    private readonly IKafkaProducer _producer;
+
+    public OutboxDispatcher(ILogger<OutboxDispatcher> logger, OrderingDbContext db, IKafkaProducer producer)
     {
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<OutboxDispatcher> _logger;
-        private readonly string _topic;
+        _logger = logger;
+        _db = db;
+        _producer = producer;
+    }
 
-        public OutboxDispatcher(IServiceScopeFactory scopeFactory, ILogger<OutboxDispatcher> logger, IConfiguration config)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("OutboxDispatcher started");
+        while (!stoppingToken.IsCancellationRequested)
         {
-            _scopeFactory = scopeFactory;
-            _logger = logger;
-            _topic = config.GetSection("Kafka")["Topic"] ?? "ordering-events";
-        }
+            var messages = await _db.OutboxMessages
+                .Where(m => m.DispatchedAt == null)
+                .OrderBy(m => m.OccurredAt)
+                .Take(50)
+                .ToListAsync(stoppingToken);
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
+            foreach (var m in messages)
             {
                 try
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var bus = scope.ServiceProvider.GetRequiredService<IEventBus>();
-
-                    var batch = await db.OutboxMessages
-                        .Where(x => x.PublishedUtc == null)
-                        .OrderBy(x => x.OccurredAtUtc)
-                        .Take(50)
-                        .ToListAsync(stoppingToken);
-
-                    foreach (var msg in batch)
-                    {
-                        await bus.PublishAsync(_topic, msg.Id.ToString(), msg.Payload, stoppingToken);
-                        msg.PublishedUtc = DateTime.UtcNow;
-                    }
-
-                    await db.SaveChangesAsync(stoppingToken);
+                    await _producer.PublishAsync(m.Topic, m.Payload, stoppingToken);
+                    m.DispatchedAt = DateTimeOffset.UtcNow;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Outbox dispatch error");
+                    _logger.LogError(ex, "Failed to publish outbox message {Id}", m.Id);
                 }
-
-                await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
             }
+
+            if (messages.Count > 0)
+            {
+                await _db.SaveChangesAsync(stoppingToken);
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
     }
 }

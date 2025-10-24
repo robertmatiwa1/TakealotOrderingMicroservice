@@ -1,55 +1,36 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Ordering.Application.Interfaces;
-using Ordering.Api.Contracts.Requests;
-using Ordering.Api.Contracts.Responses;
+using Ordering.Application.Commands;
+using Ordering.Application.Queries;
+using Ordering.Application.Models;
 
-namespace Ordering.Api.Controllers
+namespace Ordering.Api.Controllers;
+
+[ApiController]
+[Route("api/orders")]
+public class OrdersController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class OrdersController : ControllerBase
+    private readonly IMediator _mediator;
+    public OrdersController(IMediator mediator) => _mediator = mediator;
+
+    [HttpPost]
+    public async Task<ActionResult<object>> Create([FromBody] CreateOrderCommand cmd, CancellationToken ct)
     {
-        private readonly IOrderService _orderService;
+        var id = await _mediator.Send(cmd, ct);
+        return Ok(new { id });
+    }
 
-        public OrdersController(IOrderService orderService)
-        {
-            _orderService = orderService;
-        }
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<OrderDto>> Get(Guid id, CancellationToken ct)
+    {
+        var dto = await _mediator.Send(new GetOrderQuery(id), ct);
+        return dto is null ? NotFound() : Ok(dto);
+    }
 
-        [HttpPost]
-        public async Task<ActionResult<OrderResponse>> Create([FromBody] CreateOrderRequest request, CancellationToken ct)
-        {
-            var result = await _orderService.CreateOrderAsync(request.CustomerId, request.Lines.Select(l => (l.Sku, l.Quantity, l.UnitPrice)).ToList(), ct);
-            return Ok(new OrderResponse
-            {
-                Id = result.Id.ToString(),
-                Status = result.Status.ToString(),
-                CustomerId = result.CustomerId.ToString(),
-                Total = result.Total.Amount,
-                Currency = result.Total.Currency
-            });
-        }
-
-        [HttpGet("{id:guid}")]
-        public async Task<ActionResult<OrderResponse>> Get(Guid id, CancellationToken ct)
-        {
-            var result = await _orderService.GetAsync(id, ct);
-            if (result == null) return NotFound();
-            return Ok(new OrderResponse
-            {
-                Id = result.Id.ToString(),
-                Status = result.Status.ToString(),
-                CustomerId = result.CustomerId.ToString(),
-                Total = result.Total.Amount,
-                Currency = result.Total.Currency
-            });
-        }
-
-        [HttpPost("{id:guid}/cancel")]
-        public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelOrderRequest request, CancellationToken ct)
-        {
-            await _orderService.CancelAsync(id, request.Reason ?? "Cancelled by user", ct);
-            return NoContent();
-        }
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelOrderCommand body, CancellationToken ct)
+    {
+        await _mediator.Send(body with { OrderId = id }, ct);
+        return NoContent();
     }
 }
