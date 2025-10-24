@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Ordering.Infrastructure.Persistence;
@@ -10,46 +11,66 @@ namespace Ordering.Infrastructure.Outbox;
 public class OutboxDispatcher : BackgroundService
 {
     private readonly ILogger<OutboxDispatcher> _logger;
-    private readonly OrderingDbContext _db;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IKafkaProducer _producer;
 
-    public OutboxDispatcher(ILogger<OutboxDispatcher> logger, OrderingDbContext db, IKafkaProducer producer)
+    public OutboxDispatcher(
+        ILogger<OutboxDispatcher> logger, 
+        IServiceScopeFactory scopeFactory, 
+        IKafkaProducer producer)
     {
         _logger = logger;
-        _db = db;
+        _scopeFactory = scopeFactory;
         _producer = producer;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("OutboxDispatcher started");
+        
         while (!stoppingToken.IsCancellationRequested)
         {
-            var messages = await _db.OutboxMessages
-                .Where(m => m.DispatchedAt == null)
-                .OrderBy(m => m.OccurredAt)
-                .Take(50)
-                .ToListAsync(stoppingToken);
-
-            foreach (var m in messages)
+            try
             {
-                try
+                // Create a new scope for each iteration
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+                
+                var messages = await db.OutboxMessages
+                    .Where(m => m.DispatchedAt == null)
+                    .OrderBy(m => m.OccurredAt)
+                    .Take(50)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var message in messages)
                 {
-                    await _producer.PublishAsync(m.Topic, m.Payload, stoppingToken);
-                    m.DispatchedAt = DateTimeOffset.UtcNow;
+                    try
+                    {
+                        await _producer.PublishAsync(message.Topic, message.Payload, stoppingToken);
+                        message.DispatchedAt = DateTimeOffset.UtcNow;
+                        _logger.LogDebug("Successfully published outbox message {MessageId}", message.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to publish outbox message {MessageId}", message.Id);
+                        // Consider adding retry logic or dead letter queue here
+                    }
                 }
-                catch (Exception ex)
+
+                if (messages.Count > 0)
                 {
-                    _logger.LogError(ex, "Failed to publish outbox message {Id}", m.Id);
+                    await db.SaveChangesAsync(stoppingToken);
+                    _logger.LogInformation("Processed {MessageCount} outbox messages", messages.Count);
                 }
             }
-
-            if (messages.Count > 0)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                await _db.SaveChangesAsync(stoppingToken);
+                _logger.LogError(ex, "Error during outbox processing cycle");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
+        
+        _logger.LogInformation("OutboxDispatcher stopped");
     }
 }

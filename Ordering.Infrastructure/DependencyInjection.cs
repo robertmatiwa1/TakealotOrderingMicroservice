@@ -1,24 +1,31 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Ordering.Infrastructure.Messaging;
+using Microsoft.Extensions.Configuration;
+using Ordering.Domain.Interfaces;
 using Ordering.Infrastructure.Persistence;
+using Ordering.Infrastructure.Outbox;
 
-namespace Ordering.Infrastructure;
-
-public static class DependencyInjection
+namespace Ordering.Infrastructure
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString, string kafkaBootstrap, string topic)
+    public static class DependencyInjection
     {
-        services.AddDbContext<OrderingDbContext>(opts => opts.UseNpgsql(connectionString));
-
-        services.Configure<KafkaOptions>(opt =>
+        public static IServiceCollection AddInfrastructure(
+            this IServiceCollection services,
+            string connectionString,
+            string kafkaBootstrap,
+            string outboxTopic)
         {
-            opt.BootstrapServers = kafkaBootstrap;
-            opt.DefaultTopic = topic;
-        });
-        services.AddSingleton<IKafkaProducer, KafkaProducer>();
+            // Register DbContext
+            services.AddDbContext<OrderingContext>(options =>
+                options.UseNpgsql(connectionString));
 
-        return services;
+            // Register repositories
+            services.AddScoped<IOrderRepository, OrderingContext>();
+
+            // Register outbox - use the correct type name
+            services.AddScoped<IOutboxWriter, OutboxWriter>();
+
+            return services;
+        }
     }
 }

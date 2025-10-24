@@ -1,76 +1,71 @@
-using System.Reflection;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Serilog;
+﻿using Microsoft.EntityFrameworkCore;
+using Ordering.Application;
 using Ordering.Infrastructure;
 using Ordering.Infrastructure.Persistence;
-using Ordering.Infrastructure.Outbox;
-using Ordering.Infrastructure.Messaging;
-using Ordering.Application;
-using Ordering.Application.Commands;
 using MediatR;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .CreateLogger();
-builder.Host.UseSerilog();
-
-// Config
-var connectionString = builder.Configuration.GetConnectionString("OrderingDb")
-    ?? builder.Configuration["ConnectionStrings:OrderingDb"]
-    ?? "Host=localhost;Database=ordering;Username=postgres;Password=password";
-
-var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] ?? "localhost:19092";
-var kafkaTopic = builder.Configuration["Kafka:Topic"] ?? "ordering-events";
-
-// Services
+// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Ordering API", Version = "v1" });
+builder.Services.AddSwaggerGen();
+
+// Register MediatR from multiple assemblies
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()); // API assembly
+    cfg.RegisterServicesFromAssembly(typeof(Ordering.Application.DependencyInjection).Assembly); // Application assembly
 });
 
-builder.Services.AddHealthChecks();
+// Get configuration values - UPDATED connection string with correct password
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;";
 
-builder.Services.AddDbContext<OrderingDbContext>(opts =>
-    opts.UseNpgsql(connectionString));
+var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] 
+    ?? "redpanda:9092";
 
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-builder.Services.AddApplication(); // extension method in Application to register validators/behaviors
-builder.Services.AddInfrastructure(connectionString, kafkaBootstrap, kafkaTopic);
-
-// Hosted services
-builder.Services.AddHostedService<OutboxDispatcher>();
+// Add application and infrastructure services with required parameters
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(connectionString, kafkaBootstrap, "ordering-outbox");
 
 var app = builder.Build();
 
-// Auto-migrate in Development
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
-    db.Database.Migrate();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
 }
 
-app.UseSerilogRequestLogging();
-
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ordering API v1");
-    c.RoutePrefix = string.Empty;
-});
-
-app.MapHealthChecks("/health/live");
-app.MapHealthChecks("/health/ready", new HealthCheckOptions());
-
+app.UseRouting();
+app.UseAuthorization();
 app.MapControllers();
 
-app.Run();
+// Add a simple minimal API endpoint for testing
+app.MapGet("/", () => "Ordering API is running!");
+app.MapGet("/test", () => new { message = "Test endpoint works!", timestamp = DateTime.UtcNow });
+
+// Ensure database is created
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<OrderingContext>();
+        db.Database.Migrate();
+        Console.WriteLine(" Database migration completed successfully");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($" Database operation failed: {ex.Message}");
+    }
+}
+
+Console.WriteLine(" Ordering API started successfully!");
+
+// Use the URL from environment variable or default to 5055
+var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://0.0.0.0:5055";
+Console.WriteLine($" Starting API on: {url}");
+app.Run(url);

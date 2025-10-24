@@ -1,32 +1,38 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Ordering.Domain;
-using Ordering.Application.Interfaces;
-using Ordering.Infrastructure.Persistence;
+using Ordering.Domain.Interfaces;
 using Ordering.Infrastructure.Outbox;
+using Ordering.Application.Interfaces;
 
 namespace Ordering.Application.Services
 {
     public class OrderService : IOrderService
     {
-        private readonly AppDbContext _db;
+        private readonly IOrderRepository _orderRepository;
         private readonly IOutboxWriter _outbox;
 
-        public OrderService(AppDbContext db, IOutboxWriter outbox)
+        public OrderService(
+            IOrderRepository orderRepository,
+            IOutboxWriter outbox)
         {
-            _db = db;
+            _orderRepository = orderRepository;
             _outbox = outbox;
         }
 
-        public async Task<Order> CreateOrderAsync(Guid customerId, List<(string sku, int quantity, decimal unitPrice)> lines, CancellationToken ct)
+        public async Task<Order> CreateOrderAsync(
+            Guid customerId,
+            List<(string sku, int quantity, decimal unitPrice)> lines,
+            CancellationToken ct)
         {
-            var order = Order.Place(customerId, lines.Select(l => new OrderLine(l.sku, l.quantity, Money.Of(l.unitPrice, "ZAR"))).ToList());
-            await _db.Orders.AddAsync(order, ct);
-            await _db.SaveChangesAsync(ct);
+            var order = Order.Place(
+                customerId,
+                lines.Select(l => new OrderLine(l.sku, l.quantity, Money.Of(l.unitPrice, "ZAR"))).ToList());
+
+            await _orderRepository.CreateAsync(order, ct);
 
             // Append domain events to Outbox
             foreach (var evt in order.DequeueDomainEvents())
@@ -37,16 +43,35 @@ namespace Ordering.Application.Services
 
         public async Task<Order?> GetAsync(Guid id, CancellationToken ct)
         {
-            return await _db.Orders.Include(o => o.Lines).FirstOrDefaultAsync(o => o.Id == id, ct);
+            return await _orderRepository.GetAsync(id, ct);
         }
 
+        public async Task<bool> CancelOrderAsync(Guid orderId, CancellationToken ct)
+        {
+            var order = await _orderRepository.GetAsync(orderId, ct);
+
+            if (order == null)
+                return false;
+
+            order.Cancel("Customer requested cancellation");
+            await _orderRepository.UpdateAsync(order, ct);
+
+            foreach (var evt in order.DequeueDomainEvents())
+                await _outbox.WriteAsync(evt, ct);
+
+            return true;
+        }
+
+        // Keep the existing CancelAsync for backward compatibility if needed
         public async Task CancelAsync(Guid id, string reason, CancellationToken ct)
         {
-            var order = await _db.Orders.Include(o => o.Lines).FirstOrDefaultAsync(o => o.Id == id, ct);
-            if (order == null) throw new InvalidOperationException("Order not found");
+            var order = await _orderRepository.GetAsync(id, ct);
+
+            if (order == null)
+                throw new InvalidOperationException("Order not found");
 
             order.Cancel(reason);
-            await _db.SaveChangesAsync(ct);
+            await _orderRepository.UpdateAsync(order, ct);
 
             foreach (var evt in order.DequeueDomainEvents())
                 await _outbox.WriteAsync(evt, ct);

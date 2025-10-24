@@ -11,7 +11,4 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Ordering.Domain\Ordering.Domain.csproj" />
-  </ItemGroup>
 </Project>

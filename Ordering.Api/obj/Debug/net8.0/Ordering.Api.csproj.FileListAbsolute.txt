@@ -4,7 +4,6 @@ C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Ordering.Api.runtimeconfig.json
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Ordering.Api.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Ordering.Api.pdb
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Ordering.Api.xml
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Confluent.Kafka.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\FluentValidation.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Humanizer.dll
@@ -23,19 +22,6 @@ C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Mono.TextTemplating.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Npgsql.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\OpenTelemetry.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\OpenTelemetry.Api.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\OpenTelemetry.Api.ProviderBuilderExtensions.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\OpenTelemetry.Extensions.Hosting.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.AspNetCore.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Extensions.Hosting.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Extensions.Logging.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Formatting.Compact.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Settings.Configuration.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Sinks.Console.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Sinks.Debug.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Serilog.Sinks.File.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Swashbuckle.AspNetCore.Swagger.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Swashbuckle.AspNetCore.SwaggerUI.dll
@@ -146,7 +132,8 @@ C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.csproj.CopyComplete
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\refint\Ordering.Api.dll
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.xml
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.pdb
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.genruntimeconfig.cache
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\ref\Ordering.Api.dll
+C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\MediatR.dll
+C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\MediatR.Contracts.dll

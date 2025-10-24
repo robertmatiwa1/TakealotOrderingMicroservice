@@ -29,9 +29,6 @@
               "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Application\\Ordering.Application.csproj": {
                 "projectPath": "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Application\\Ordering.Application.csproj"
               },
-              "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Domain\\Ordering.Domain.csproj": {
-                "projectPath": "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Domain\\Ordering.Domain.csproj"
-              },
               "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Infrastructure\\Ordering.Infrastructure.csproj": {
                 "projectPath": "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Infrastructure\\Ordering.Infrastructure.csproj"
               }
@@ -48,30 +45,15 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Microsoft.EntityFrameworkCore": {
-              "target": "Package",
-              "version": "[8.0.8, )"
-            },
             "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[8.0.8, )"
-            },
-            "Microsoft.EntityFrameworkCore.Relational": {
-              "target": "Package",
-              "version": "[8.0.8, )"
-            },
-            "OpenTelemetry.Extensions.Hosting": {
-              "target": "Package",
-              "version": "[1.8.1, )"
-            },
-            "Serilog.AspNetCore": {
-              "target": "Package",
-              "version": "[8.0.2, )"
+              "version": "[8.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[6.6.2, )"
+              "version": "[6.4.0, )"
             }
           },
           "imports": [
@@ -141,6 +123,10 @@
             "FluentValidation": {
               "target": "Package",
               "version": "[11.9.0, )"
+            },
+            "MediatR": {
+              "target": "Package",
+              "version": "[12.2.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",

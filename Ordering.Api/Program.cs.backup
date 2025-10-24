@@ -1,0 +1,111 @@
+using System.Reflection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using Serilog;
+using Ordering.Infrastructure;
+using Ordering.Infrastructure.Persistence;
+using Ordering.Infrastructure.Outbox;
+using Ordering.Infrastructure.Messaging;
+using Ordering.Application;
+using Ordering.Application.Commands;
+using MediatR;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ------------------------------
+// Configure Serilog
+// ------------------------------
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+// ------------------------------
+// EXPLICIT PORT CONFIGURATION - ADD THIS LINE
+// ------------------------------
+builder.WebHost.UseUrls("http://*:5055");
+
+// ------------------------------
+// Configuration values
+// ------------------------------
+var connectionString = builder.Configuration.GetConnectionString("OrderingDb")
+    ?? builder.Configuration["ConnectionStrings:OrderingDb"]
+    ?? "Host=localhost;Database=ordering;Username=postgres;Password=password";
+
+var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] ?? "localhost:19092";
+var kafkaTopic = builder.Configuration["Kafka:Topic"] ?? "ordering-events";
+
+// ------------------------------
+// Register services
+// ------------------------------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Ordering API", Version = "v1" });
+});
+
+builder.Services.AddHealthChecks();
+
+// Register MediatR
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
+// Register application and infrastructure services
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(connectionString, kafkaBootstrap, kafkaTopic);
+
+// Register Outbox dispatcher background service
+builder.Services.AddHostedService<OutboxDispatcher>();
+
+var app = builder.Build();
+
+// ------------------------------
+// Apply EF Core migrations BEFORE background services start
+// ------------------------------
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+    Log.Information("Applying database migrations...");
+    db.Database.Migrate();
+    Log.Information("Database migrations applied successfully.");
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Error applying database migrations");
+    throw;
+}
+
+// ------------------------------
+// Middleware Pipeline
+// ------------------------------
+app.UseSerilogRequestLogging();
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ordering API v1");
+    c.RoutePrefix = string.Empty;
+});
+
+app.UseRouting();
+app.MapControllers();
+
+app.MapHealthChecks("/health/live");
+app.MapHealthChecks("/health/ready", new HealthCheckOptions());
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    Log.Information("Application started successfully!");
+    Log.Information("Web server is listening on port 5055...");
+});
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    Log.Information("Application is shutting down...");
+});
+
+app.Run();

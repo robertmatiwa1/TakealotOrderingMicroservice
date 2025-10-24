@@ -1,12 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "Hxh4dagEE+cfSDko8YvbpNCSdAFGNbxm9JeaM5sTC6qjhNnC8nccnZ/2fJqVK1NbLtZoLILFZ8iO6xaA02mE2g==",
+  "dgSpecHash": "3oU8mnu2rsQXLlM45aHzidT3t6/+mwqc7H9GYI4OwXGEFJQsgDbm4j1BoptHdcMGBlR9TSF9oUMjHUlKDN0/ZQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\Samktec\\Desktop\\TakealotOrderingMicroservice\\Ordering.Application\\Ordering.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Samktec\\.nuget\\packages\\confluent.kafka\\2.5.0\\confluent.kafka.2.5.0.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\fluentvalidation\\11.9.0\\fluentvalidation.11.9.0.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\librdkafka.redist\\2.5.0\\librdkafka.redist.2.5.0.nupkg.sha512",
+    "C:\\Users\\Samktec\\.nuget\\packages\\mediatr\\12.2.0\\mediatr.12.2.0.nupkg.sha512",
+    "C:\\Users\\Samktec\\.nuget\\packages\\mediatr.contracts\\2.0.1\\mediatr.contracts.2.0.1.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.entityframeworkcore\\8.0.8\\microsoft.entityframeworkcore.8.0.8.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\8.0.8\\microsoft.entityframeworkcore.abstractions.8.0.8.nupkg.sha512",
     "C:\\Users\\Samktec\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\8.0.8\\microsoft.entityframeworkcore.analyzers.8.0.8.nupkg.sha512",
