@@ -151,9 +151,9 @@
               "target": "Package",
               "version": "[12.2.0, )"
             },
-            "Microsoft.EntityFrameworkCore": {
+            "Microsoft.Extensions.DependencyInjection": {
               "target": "Package",
-              "version": "[8.0.8, )"
+              "version": "[8.0.1, )"
             },
             "Microsoft.Extensions.DependencyInjection.Abstractions": {
               "target": "Package",
@@ -213,12 +213,6 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "dependencies": {
-            "Microsoft.EntityFrameworkCore": {
-              "target": "Package",
-              "version": "[8.0.7, )"
-            }
-          },
           "imports": [
             "net461",
             "net462",
@@ -283,17 +277,21 @@
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[8.0.8, )"
+              "version": "[8.0.11, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[8.0.8, )"
+              "version": "[8.0.11, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
+              "target": "Package",
+              "version": "[8.0.11, )"
             },
             "Microsoft.Extensions.DependencyInjection": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[8.0.1, )"
             },
             "Microsoft.Extensions.Hosting.Abstractions": {
               "target": "Package",
@@ -301,7 +299,7 @@
             },
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
-              "version": "[8.0.8, )"
+              "version": "[8.0.11, )"
             }
           },
           "imports": [

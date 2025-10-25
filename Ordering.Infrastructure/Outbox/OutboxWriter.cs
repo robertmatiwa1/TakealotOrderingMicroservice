@@ -1,21 +1,33 @@
-﻿using Ordering.Infrastructure.Persistence;
+﻿using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Ordering.Infrastructure.Persistence;
 
 namespace Ordering.Infrastructure.Outbox
 {
     public class OutboxWriter : IOutboxWriter
     {
-        private readonly OrderingContext _context;
+        private readonly OrderingDbContext _context;
 
-        public OutboxWriter(OrderingContext context)
+        public OutboxWriter(OrderingDbContext context)
         {
             _context = context;
         }
 
-        public Task WriteAsync(object domainEvent, CancellationToken ct)
+        public async Task WriteAsync(object domainEvent, CancellationToken ct)
         {
-            // Implementation for writing to outbox
-            // For now, just return completed task
-            return Task.CompletedTask;
+            // Serialize the event for storage
+            var payload = JsonSerializer.Serialize(domainEvent);
+
+            var message = new OutboxMessage
+            {
+                Topic = domainEvent.GetType().Name.ToLowerInvariant(),
+                Payload = payload,
+                OccurredAt = DateTimeOffset.UtcNow
+            };
+
+            await _context.OutboxMessages.AddAsync(message, ct);
+            await _context.SaveChangesAsync(ct);
         }
     }
 }

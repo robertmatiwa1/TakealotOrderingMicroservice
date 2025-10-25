@@ -1,7 +1,6 @@
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\bin\Debug\net8.0\Ordering.Domain.deps.json
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\bin\Debug\net8.0\Ordering.Domain.dll
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\bin\Debug\net8.0\Ordering.Domain.pdb
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\obj\Debug\net8.0\Ordering.Domain.csproj.AssemblyReference.cache
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\obj\Debug\net8.0\Ordering.Domain.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\obj\Debug\net8.0\Ordering.Domain.AssemblyInfoInputs.cache
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain\obj\Debug\net8.0\Ordering.Domain.AssemblyInfo.cs

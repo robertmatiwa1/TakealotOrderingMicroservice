@@ -1,6 +1,0 @@
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain.Tests\obj\Debug\net8.0\Ordering.Domain.Tests.csproj.AssemblyReference.cache
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain.Tests\obj\Debug\net8.0\Ordering.Domain.Tests.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain.Tests\obj\Debug\net8.0\Ordering.Domain.Tests.AssemblyInfoInputs.cache
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain.Tests\obj\Debug\net8.0\Ordering.Domain.Tests.AssemblyInfo.cs
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain.Tests\obj\Debug\net8.0\Ordering.Domain.Tests.csproj.CoreCompileInputs.cache
-C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Domain.Tests\obj\Debug\net8.0\Ordering.Domain.Tests.sourcelink.json

@@ -1,4 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.OpenApi.Models;
+using Ordering.Api.HealthChecks;
+using HealthChecks.UI.Client;
+using Microsoft.EntityFrameworkCore;
 using Ordering.Application;
 using Ordering.Infrastructure;
 using Ordering.Infrastructure.Persistence;
@@ -7,65 +11,185 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ---------- Service Registration ----------
+
+// MVC + Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// Register MediatR from multiple assemblies
-builder.Services.AddMediatR(cfg => {
-    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()); // API assembly
-    cfg.RegisterServicesFromAssembly(typeof(Ordering.Application.DependencyInjection).Assembly); // Application assembly
+// Swagger (registered once, enabled conditionally later)
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Takealot Ordering API",
+        Version = "v1.0.0",
+        Description = "Production-ready ordering microservice",
+        Contact = new OpenApiContact
+        {
+            Name = "Takealot Engineering",
+            Email = "engineering@takealot.com"
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+
+    c.EnableAnnotations();
+
+    // JWT Bearer Security
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
-// Get configuration values - UPDATED connection string with correct password
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+// MediatR (optional but kept for CQRS or domain event patterns)
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+    cfg.RegisterServicesFromAssembly(typeof(Ordering.Application.DependencyInjection).Assembly);
+});
+
+// Configuration
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;";
+var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] ?? "redpanda:9092";
 
-var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] 
-    ?? "redpanda:9092";
-
-// Add application and infrastructure services with required parameters
+// Application + Infrastructure layers
 builder.Services
     .AddApplication()
     .AddInfrastructure(connectionString, kafkaBootstrap, "ordering-outbox");
 
+// ---------- Health Checks ----------
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "database", "ready" })
+    // Uncomment if Redis is used in your infra
+    //.AddRedis(builder.Configuration["Redis:ConnectionString"], name: "redis-cache", tags: new[] { "cache", "ready" })
+    .AddCheck<OrderingServiceHealthCheck>("ordering-service", tags: new[] { "service", "ready" });
+
+// HealthChecks UI - Relative path ensures it works across environments
+builder.Services.AddHealthChecksUI(setup =>
+{
+    setup.DisableDatabaseMigrations();
+    setup.MaximumHistoryEntriesPerEndpoint(50);
+})
+.AddInMemoryStorage();
+
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("HealthChecks", policy =>
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowAnyOrigin());
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// ---------- Middleware Configuration ----------
+
+// HTTPS, static files for HealthChecks UI
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseCors("HealthChecks");
+app.UseAuthorization();
+
+// ---------- Swagger UI (conditional) ----------
+if (!app.Environment.IsProduction())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseDeveloperExceptionPage();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Takealot Ordering API v1");
+        c.RoutePrefix = "api-docs";
+        c.DocumentTitle = "Takealot Ordering API Portal";
+        c.DisplayRequestDuration();
+        c.DisplayOperationId();
+    });
 }
 
-app.UseRouting();
-app.UseAuthorization();
+// ---------- Health Endpoints ----------
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    AllowCachingResponses = false
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+    AllowCachingResponses = false
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    AllowCachingResponses = false
+});
+
+// HealthChecks UI (Dashboard)
+app.MapHealthChecksUI(setup => { setup.UIPath = "/health-ui"; });
+
+// ---------- API Controllers ----------
 app.MapControllers();
 
-// Add a simple minimal API endpoint for testing
-app.MapGet("/", () => "Ordering API is running!");
-app.MapGet("/test", () => new { message = "Test endpoint works!", timestamp = DateTime.UtcNow });
+// ---------- Minimal Diagnostic Endpoints ----------
+app.MapGet("/", () => new
+{
+    service = "Takealot Ordering API",
+    version = "1.0.0",
+    status = "operational",
+    timestamp = DateTime.UtcNow,
+    environment = app.Environment.EnvironmentName
+});
 
-// Ensure database is created
+app.MapGet("/test", () => new
+{
+    message = "Service is responsive",
+    timestamp = DateTime.UtcNow
+});
+
+// ---------- Database Migration on Startup ----------
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        var db = scope.ServiceProvider.GetRequiredService<OrderingContext>();
+        var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
         db.Database.Migrate();
-        Console.WriteLine(" Database migration completed successfully");
+        Console.WriteLine("Database migration completed successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($" Database operation failed: {ex.Message}");
+        Console.WriteLine($"Database migration failed: {ex.Message}");
     }
 }
 
-Console.WriteLine(" Ordering API started successfully!");
+Console.WriteLine("Takealot Ordering API started successfully!");
+Console.WriteLine($"Swagger UI: http://localhost:5055/api-docs");
+Console.WriteLine($"Health UI: http://localhost:5055/health-ui");
 
-// Use the URL from environment variable or default to 5055
-var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://0.0.0.0:5055";
-Console.WriteLine($" Starting API on: {url}");
-app.Run(url);
+app.Run("http://0.0.0.0:5055");
