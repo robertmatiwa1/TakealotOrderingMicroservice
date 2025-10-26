@@ -168,3 +168,4 @@ C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.pdb
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\Ordering.Api.genruntimeconfig.cache
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\obj\Debug\net8.0\ref\Ordering.Api.dll
+C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api\bin\Debug\net8.0\Ordering.Api\appsettings.Production.json

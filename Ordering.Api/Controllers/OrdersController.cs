@@ -6,7 +6,7 @@ using Ordering.Application.Commands;
 namespace Ordering.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/orders")]
 [SwaggerTag("Manage orders and order processing")]
 public class OrdersController : ControllerBase
 {

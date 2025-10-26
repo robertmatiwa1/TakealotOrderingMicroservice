@@ -181,3 +181,4 @@ C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api.Tests\obj\Deb
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api.Tests\obj\Debug\net8.0\Ordering.Api.Tests.pdb
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api.Tests\obj\Debug\net8.0\Ordering.Api.Tests.genruntimeconfig.cache
 C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api.Tests\obj\Debug\net8.0\ref\Ordering.Api.Tests.dll
+C:\Users\Samktec\Desktop\TakealotOrderingMicroservice\Ordering.Api.Tests\bin\Debug\net8.0\Ordering.Api\appsettings.Production.json

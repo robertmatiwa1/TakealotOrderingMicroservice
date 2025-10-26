@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger (registered once, enabled conditionally later)
+// Swagger (enabled only in non-production)
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -64,7 +64,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// MediatR (for CQRS or domain events)
+// ---------- MediatR Configuration ----------
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
@@ -72,11 +72,15 @@ builder.Services.AddMediatR(cfg =>
 });
 
 // ---------- Configuration ----------
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection") ??
+    Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") ??
+    "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;";
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;";
-
-var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] ?? "redpanda:9092";
+var kafkaBootstrap =
+    builder.Configuration["Kafka:BootstrapServers"] ??
+    Environment.GetEnvironmentVariable("Kafka__BootstrapServers") ??
+    "redpanda:9092";
 
 // Application + Infrastructure layers
 builder.Services
@@ -88,11 +92,9 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "database", "ready" })
     .AddCheck<OrderingServiceHealthCheck>("ordering-service", tags: new[] { "service", "ready" });
 
-// HealthChecks UI - using internal localhost for in-container check
 builder.Services.AddHealthChecksUI(setup =>
 {
-    // use localhost internally to avoid 0.0.0.0 errors
-    setup.AddHealthCheckEndpoint("ordering-api", "http://localhost:5055/health");
+    setup.AddHealthCheckEndpoint("ordering-api", "/health");
     setup.SetEvaluationTimeInSeconds(60);
     setup.MaximumHistoryEntriesPerEndpoint(50);
 })
@@ -110,7 +112,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ---------- Middleware ----------
-app.UseHttpsRedirection();
+// Disable HTTPS redirect when hosted behind a reverse proxy (Render, ECS, etc.)
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors("HealthChecks");
@@ -134,24 +141,20 @@ if (!app.Environment.IsProduction())
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     Predicate = _ => true,
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
-    AllowCachingResponses = false
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready"),
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
-    AllowCachingResponses = false
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
-    Predicate = _ => false,
-    AllowCachingResponses = false
+    Predicate = _ => false
 });
 
-// HealthChecks UI Dashboard
 app.MapHealthChecksUI(setup => { setup.UIPath = "/health-ui"; });
 
 // ---------- Controllers ----------
@@ -163,8 +166,8 @@ app.MapGet("/", () => new
     service = "Takealot Ordering API",
     version = "1.0.0",
     status = "operational",
-    timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName
+    environment = app.Environment.EnvironmentName,
+    timestamp = DateTime.UtcNow
 });
 
 app.MapGet("/test", () => new
@@ -173,23 +176,33 @@ app.MapGet("/test", () => new
     timestamp = DateTime.UtcNow
 });
 
-// ---------- Database Migration ----------
+// ---------- Database Migration with Retry ----------
 using (var scope = app.Services.CreateScope())
 {
-    try
+    var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+    const int maxRetries = 5;
+    var retries = 0;
+
+    while (retries < maxRetries)
     {
-        var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
-        db.Database.Migrate();
-        Console.WriteLine("Database migration completed successfully.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Database migration failed: {ex.Message}");
+        try
+        {
+            db.Database.Migrate();
+            Console.WriteLine("Database migration completed successfully.");
+            break;
+        }
+        catch (Exception ex)
+        {
+            retries++;
+            Console.WriteLine($"Migration attempt {retries} failed: {ex.Message}");
+            Thread.Sleep(5000);
+        }
     }
 }
 
 Console.WriteLine("Takealot Ordering API started successfully!");
-Console.WriteLine($"Swagger UI: http://localhost:5055/api-docs");
-Console.WriteLine($"Health UI: http://localhost:5055/health-ui");
+Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine("--------------------------------------------------");
 
-app.Run("http://0.0.0.0:5055");
+// ---------- Run ----------
+app.Run(); 
