@@ -22,7 +22,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Takealot Ordering API",
         Version = "v1.0.0",
-        Description = "Production-ready ordering microservice",
+        Description = "Production-ready ordering microservice with health monitoring",
         Contact = new OpenApiContact
         {
             Name = "Takealot Engineering",
@@ -36,29 +36,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     c.EnableAnnotations();
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Description = "JWT Authorization header using the Bearer scheme."
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
 });
 
 // ---------- MediatR ----------
@@ -77,7 +54,10 @@ var kafkaBootstrap =
     builder.Configuration["Kafka:BootstrapServers"] ??
     Environment.GetEnvironmentVariable("Kafka__BootstrapServers");
 
-// ---------- Application & Infrastructure ----------
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5055";
+var healthEndpoint = $"http://127.0.0.1:{port}/health"; // works inside container
+
+// ---------- Application + Infrastructure ----------
 builder.Services
     .AddApplication()
     .AddInfrastructure(connectionString, kafkaBootstrap, "ordering-outbox");
@@ -87,19 +67,13 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "database", "ready" })
     .AddCheck<OrderingServiceHealthCheck>("ordering-service", tags: new[] { "service", "ready" });
 
-// Dynamically detect environment base URL (Render sets PORT)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5055";
-var baseUrl = Environment.GetEnvironmentVariable("RENDER_EXTERNAL_URL") ??
-               $"http://0.0.0.0:{port}";
-var healthEndpoint = $"{baseUrl.TrimEnd('/')}/health";
-
-// Register HealthChecks UI dynamically
 builder.Services.AddHealthChecksUI(setup =>
 {
-    setup.AddHealthCheckEndpoint("ordering-api", healthEndpoint);
+    setup.AddHealthCheckEndpoint("Ordering API", healthEndpoint);
     setup.SetEvaluationTimeInSeconds(60);
     setup.MaximumHistoryEntriesPerEndpoint(50);
-}).AddInMemoryStorage();
+})
+.AddInMemoryStorage();
 
 // ---------- CORS ----------
 builder.Services.AddCors(options =>
@@ -113,7 +87,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ---------- Middleware ----------
-// Skip HTTPS redirect if Render or similar PaaS (handled by proxy)
 if (!app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
@@ -132,9 +105,6 @@ if (!app.Environment.IsProduction())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Takealot Ordering API v1");
         c.RoutePrefix = "api-docs";
-        c.DocumentTitle = "Takealot Ordering API Portal";
-        c.DisplayRequestDuration();
-        c.DisplayOperationId();
     });
 }
 
@@ -161,7 +131,7 @@ app.MapHealthChecksUI(setup => { setup.UIPath = "/health-ui"; });
 // ---------- Controllers ----------
 app.MapControllers();
 
-// ---------- Diagnostic Endpoints ----------
+// ---------- Diagnostic ----------
 app.MapGet("/", () => new
 {
     service = "Takealot Ordering API",
@@ -171,33 +141,18 @@ app.MapGet("/", () => new
     timestamp = DateTime.UtcNow
 });
 
-app.MapGet("/test", () => new
-{
-    message = "Service is responsive",
-    timestamp = DateTime.UtcNow
-});
-
-// ---------- Database Migration with Retry ----------
+// ---------- Database Migration ----------
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
-    const int maxRetries = 5;
-    var retries = 0;
-
-    while (retries < maxRetries)
+    try
     {
-        try
-        {
-            db.Database.Migrate();
-            Console.WriteLine("Database migration completed successfully.");
-            break;
-        }
-        catch (Exception ex)
-        {
-            retries++;
-            Console.WriteLine($"Migration attempt {retries} failed: {ex.Message}");
-            Thread.Sleep(5000);
-        }
+        var db = scope.ServiceProvider.GetRequiredService<OrderingDbContext>();
+        db.Database.Migrate();
+        Console.WriteLine("Database migration completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database migration failed: {ex.Message}");
     }
 }
 
@@ -206,5 +161,4 @@ Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 Console.WriteLine($"Health Endpoint: {healthEndpoint}");
 Console.WriteLine("--------------------------------------------------");
 
-// ---------- Run ----------
 app.Run($"http://0.0.0.0:{port}");
