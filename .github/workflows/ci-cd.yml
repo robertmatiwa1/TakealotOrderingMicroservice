@@ -20,19 +20,19 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore TakealotOrdering.sln
+        run: dotnet restore TakealotOrderingMicroservice.sln
 
       - name: Build solution
-        run: dotnet build --no-restore -c Release TakealotOrdering.sln
+        run: dotnet build --no-restore -c Release TakealotOrderingMicroservice.sln
 
       - name: Run unit tests
         run: |
           if [ -d "Ordering.Application.Tests" ]; then
+            echo "Running unit tests..."
             dotnet test Ordering.Application.Tests/Ordering.Application.Tests.csproj --no-build -c Release --verbosity normal
           else
-            echo "No test project found, skipping tests."
+            echo " No test project found skipping tests."
           fi
-
 
   docker-build-and-push:
     runs-on: ubuntu-latest
