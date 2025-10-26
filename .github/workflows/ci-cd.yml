@@ -20,10 +20,10 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore TakealotOrderingMicroservice.sln
+        run: dotnet restore Ordering.sln
 
       - name: Build solution
-        run: dotnet build --no-restore -c Release TakealotOrderingMicroservice.sln
+        run: dotnet build --no-restore -c Release Ordering.sln
 
       - name: Run unit tests
         run: dotnet test Ordering.Application.Tests/Ordering.Application.Tests.csproj --no-build -c Release --verbosity normal
