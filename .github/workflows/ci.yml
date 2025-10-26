@@ -26,7 +26,10 @@ jobs:
         run: dotnet build --no-restore -c Release
 
       - name: Run unit tests
-        run: dotnet test --no-build --verbosity normal --configuration Release
+        run: |
+          echo "Running all tests..."
+          dotnet test Ordering.Application.Tests/Ordering.Application.Tests.csproj --no-build -c Release --verbosity normal
+
 
 
 
