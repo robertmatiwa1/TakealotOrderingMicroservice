@@ -1,0 +1,58 @@
+﻿version: '3.9'
+
+services:
+  ordering.api:
+    build:
+      context: .
+      dockerfile: Ordering.Api/Dockerfile
+    image: takealot-ordering-api
+    container_name: ordering-api
+    ports:
+      - "5055:5055"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;"
+      Kafka__BootstrapServers: "redpanda:9092"
+    depends_on:
+      - postgres
+      - redpanda
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: ordering-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: ordering
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.5
+    container_name: ordering-redpanda
+    command: >
+      redpanda start
+      --overprovisioned
+      --smp 1
+      --memory 512M
+      --reserve-memory 0M
+      --node-id 0
+      --check=false
+      --set redpanda.enable_coproc=false
+      --set redpanda.auto_create_topics_enabled=true
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9644/v1/status/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

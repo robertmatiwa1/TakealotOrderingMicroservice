@@ -64,16 +64,18 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// MediatR (optional but kept for CQRS or domain event patterns)
+// MediatR (for CQRS or domain events)
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
     cfg.RegisterServicesFromAssembly(typeof(Ordering.Application.DependencyInjection).Assembly);
 });
 
-// Configuration
+// ---------- Configuration ----------
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;";
+
 var kafkaBootstrap = builder.Configuration["Kafka:BootstrapServers"] ?? "redpanda:9092";
 
 // Application + Infrastructure layers
@@ -84,19 +86,19 @@ builder.Services
 // ---------- Health Checks ----------
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "database", "ready" })
-    // Uncomment if Redis is used in your infra
-    //.AddRedis(builder.Configuration["Redis:ConnectionString"], name: "redis-cache", tags: new[] { "cache", "ready" })
     .AddCheck<OrderingServiceHealthCheck>("ordering-service", tags: new[] { "service", "ready" });
 
-// HealthChecks UI - Relative path ensures it works across environments
+// HealthChecks UI - using internal localhost for in-container check
 builder.Services.AddHealthChecksUI(setup =>
 {
-    setup.DisableDatabaseMigrations();
+    // use localhost internally to avoid 0.0.0.0 errors
+    setup.AddHealthCheckEndpoint("ordering-api", "http://localhost:5055/health");
+    setup.SetEvaluationTimeInSeconds(60);
     setup.MaximumHistoryEntriesPerEndpoint(50);
 })
 .AddInMemoryStorage();
 
-// CORS
+// ---------- CORS ----------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("HealthChecks", policy =>
@@ -107,16 +109,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ---------- Middleware Configuration ----------
-
-// HTTPS, static files for HealthChecks UI
+// ---------- Middleware ----------
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors("HealthChecks");
 app.UseAuthorization();
 
-// ---------- Swagger UI (conditional) ----------
+// ---------- Swagger UI ----------
 if (!app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -151,13 +151,13 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
     AllowCachingResponses = false
 });
 
-// HealthChecks UI (Dashboard)
+// HealthChecks UI Dashboard
 app.MapHealthChecksUI(setup => { setup.UIPath = "/health-ui"; });
 
-// ---------- API Controllers ----------
+// ---------- Controllers ----------
 app.MapControllers();
 
-// ---------- Minimal Diagnostic Endpoints ----------
+// ---------- Diagnostic Endpoints ----------
 app.MapGet("/", () => new
 {
     service = "Takealot Ordering API",
@@ -173,7 +173,7 @@ app.MapGet("/test", () => new
     timestamp = DateTime.UtcNow
 });
 
-// ---------- Database Migration on Startup ----------
+// ---------- Database Migration ----------
 using (var scope = app.Services.CreateScope())
 {
     try
