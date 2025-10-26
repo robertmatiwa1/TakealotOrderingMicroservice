@@ -20,10 +20,10 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore TakealotOrderingMicroservice.sln
+        run: dotnet restore TakealotOrdering.sln
 
       - name: Build solution
-        run: dotnet build --no-restore -c Release TakealotOrderingMicroservice.sln
+        run: dotnet build --no-restore -c Release TakealotOrdering.sln
 
       - name: Run unit tests
         run: |
