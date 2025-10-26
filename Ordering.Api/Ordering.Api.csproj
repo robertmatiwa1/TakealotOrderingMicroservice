@@ -5,6 +5,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+
+    <!-- Fix CI/CD build error: prevents apphost file/folder conflict -->
+    <UseAppHost>false</UseAppHost>
+
+    <!-- make builds deterministic and faster in pipelines -->
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <PublishTrimmed>false</PublishTrimmed>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
