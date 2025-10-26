@@ -27,12 +27,17 @@ jobs:
 
       - name: Run unit tests
         run: |
-          if [ -d "Ordering.Application.Tests" ]; then
-          dotnet test Ordering.Application.Tests/Ordering.Application.Tests.csproj --no-build -c Release --verbosity normal
-          else
-          echo "No test project found, skipping tests."
-          fi
+          echo "Checking for test projects..."
+          TEST_PROJECTS=$(find . -type f -name "*Tests.csproj")
 
+          if [ -z "$TEST_PROJECTS" ]; then
+            echo "No test projects found. Skipping tests."
+          else
+            for project in $TEST_PROJECTS; do
+              echo "Running tests in $project..."
+              dotnet test "$project" --no-build --configuration Release --verbosity normal
+            done
+          fi
   docker-build-and-push:
     runs-on: ubuntu-latest
     needs: build-and-test
