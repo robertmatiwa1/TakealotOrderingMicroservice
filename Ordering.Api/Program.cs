@@ -12,12 +12,10 @@ using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- Service Registration ----------
-
-// MVC + Controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger (enabled only in non-production)
+// ---------- Swagger ----------
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -39,7 +37,6 @@ builder.Services.AddSwaggerGen(c =>
 
     c.EnableAnnotations();
 
-    // JWT Bearer Security
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.Http,
@@ -64,7 +61,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ---------- MediatR Configuration ----------
+// ---------- MediatR ----------
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
@@ -74,15 +71,13 @@ builder.Services.AddMediatR(cfg =>
 // ---------- Configuration ----------
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection") ??
-    Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") ??
-    "Host=postgres;Port=5432;Database=ordering;Username=postgres;Password=postgres123;";
+    Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
 var kafkaBootstrap =
     builder.Configuration["Kafka:BootstrapServers"] ??
-    Environment.GetEnvironmentVariable("Kafka__BootstrapServers") ??
-    "redpanda:9092";
+    Environment.GetEnvironmentVariable("Kafka__BootstrapServers");
 
-// Application + Infrastructure layers
+// ---------- Application & Infrastructure ----------
 builder.Services
     .AddApplication()
     .AddInfrastructure(connectionString, kafkaBootstrap, "ordering-outbox");
@@ -92,13 +87,16 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "database", "ready" })
     .AddCheck<OrderingServiceHealthCheck>("ordering-service", tags: new[] { "service", "ready" });
 
+// Dynamically compute health endpoint based on environment PORT
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5055";
+var healthEndpoint = $"http://0.0.0.0:{port}/health";
+
 builder.Services.AddHealthChecksUI(setup =>
 {
-    setup.AddHealthCheckEndpoint("ordering-api", "/health");
+    setup.AddHealthCheckEndpoint("ordering-api", healthEndpoint);
     setup.SetEvaluationTimeInSeconds(60);
     setup.MaximumHistoryEntriesPerEndpoint(50);
-})
-.AddInMemoryStorage();
+}).AddInMemoryStorage();
 
 // ---------- CORS ----------
 builder.Services.AddCors(options =>
@@ -112,7 +110,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ---------- Middleware ----------
-// Disable HTTPS redirect when hosted behind a reverse proxy (Render, ECS, etc.)
+// Disable HTTPS redirect automatically when behind reverse proxies (Render, ECS, etc.)
 if (!app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
@@ -123,7 +121,7 @@ app.UseRouting();
 app.UseCors("HealthChecks");
 app.UseAuthorization();
 
-// ---------- Swagger UI ----------
+// ---------- Swagger ----------
 if (!app.Environment.IsProduction())
 {
     app.UseSwagger();
@@ -205,4 +203,4 @@ Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
 Console.WriteLine("--------------------------------------------------");
 
 // ---------- Run ----------
-app.Run(); 
+app.Run($"http://0.0.0.0:{port}");
