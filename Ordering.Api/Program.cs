@@ -87,10 +87,13 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: new[] { "database", "ready" })
     .AddCheck<OrderingServiceHealthCheck>("ordering-service", tags: new[] { "service", "ready" });
 
-// Dynamically compute health endpoint based on environment PORT
+// Dynamically detect environment base URL (Render sets PORT)
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5055";
-var healthEndpoint = $"http://0.0.0.0:{port}/health";
+var baseUrl = Environment.GetEnvironmentVariable("RENDER_EXTERNAL_URL") ??
+               $"http://0.0.0.0:{port}";
+var healthEndpoint = $"{baseUrl.TrimEnd('/')}/health";
 
+// Register HealthChecks UI dynamically
 builder.Services.AddHealthChecksUI(setup =>
 {
     setup.AddHealthCheckEndpoint("ordering-api", healthEndpoint);
@@ -110,7 +113,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ---------- Middleware ----------
-// Disable HTTPS redirect automatically when behind reverse proxies (Render, ECS, etc.)
+// Skip HTTPS redirect if Render or similar PaaS (handled by proxy)
 if (!app.Environment.IsProduction())
 {
     app.UseHttpsRedirection();
@@ -200,6 +203,7 @@ using (var scope = app.Services.CreateScope())
 
 Console.WriteLine("Takealot Ordering API started successfully!");
 Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine($"Health Endpoint: {healthEndpoint}");
 Console.WriteLine("--------------------------------------------------");
 
 // ---------- Run ----------
