@@ -26,7 +26,8 @@ jobs:
         run: dotnet build --no-restore -c Release TakealotOrderingMicroservice.sln
 
       - name: Run unit tests
-        run: dotnet test --no-build -c Release --verbosity normal || echo "No test projects found. Skipping."
+        run: dotnet test Ordering.Application.Tests/Ordering.Application.Tests.csproj --no-build -c Release --verbosity normal
+
 
   docker-build-and-push:
     runs-on: ubuntu-latest
